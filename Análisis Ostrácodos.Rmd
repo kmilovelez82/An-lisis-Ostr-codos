@@ -2,29 +2,147 @@
 title: "Composition and distribution of Ostracodes in the Mar Chiquita Lagoon, Buenos Aires province"
 author: "Camilo Vélez"
 date: '2022-04-21'
-output: html_document
+output:
+  html_document:
+   code_folding: "show"
+   toc: yes
+   toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(eval = TRUE, echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(kableExtra)
+library(gridExtra)
+library(rstatix)
 ```
 
-## R Markdown
+# **Descriptive Analysis** #
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Load Data ##
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+library(readxl)
 
-```{r cars}
-summary(cars)
+biol.data <- read_excel("~/Principal/Gibhub/Análisis-Ostrácodos/Datos.xlsx")
 ```
 
-## Including Plots
+```{r}
+library(vegan)
 
-You can also embed plots, for example:
+biol.data.rel <- round(
+  (decostand(
+    biol.data[, -c(1:3)],
+    "total",
+    MARGIN = 1
+  ) * 100
+  ), 2
+)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+biol.data.rel <- cbind(biol.data[, c(1:3)], biol.data.rel)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+
+kable(
+  biol.data.rel, 
+  align = "ccccccc",
+  caption = "Spatio-temporal composition of Ostracades (relative abundances) in Mar Chiquita Lagoon"
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = F
+    ) %>% 
+  scroll_box(
+    height = "300px", 
+    width = "900px"
+  )
+    
+```
+
+## Bubble Plot ##
+
+```{r}
+
+biol.large <- gather(
+  biol.data.rel, 
+  "Species", 
+  "Abundance", -c(1: 3)
+  )
+```
+
+```{r fig.width=8, fig.height=12, fig.align="center"}
+
+ggplot(
+  data = biol.large,
+  aes(x = Replicate, y = Species, size = ifelse(Abundance==0, NA, Abundance), colour = Species), 
+  ) +
+  geom_point(
+    alpha = 0.6, 
+    show.legend = F
+  ) +
+  facet_grid(
+    rows = vars(Season),
+    cols = vars(Site)
+  ) +
+  theme_bw()
+```
+
+```{r}
+##Abundancia total de cada especie sumando las réplicas por sitio de muestreo##
+
+biol.data.red <- 
+  biol.data[, -3] %>% 
+  group_by(Site, Season) %>% 
+  summarise(across(everything(), sum)
+            )
+
+##Abundancia relativa sin las réplicas##
+
+biol.total <- round(
+  decostand(
+    biol.data.red[, -c(1,2)],
+    "total",
+    MARGIN = 1,
+  ) * 100, 
+  2
+)
+
+biol.total <- cbind(biol.data.red[,c(1,2)], biol.total)
+  
+```
+
+
+```{r}
+
+kable(
+  biol.total, 
+  align = "cccccc",
+  caption = "Spatio-temporal composition of Ostracades (relative abundances) in Mar Chiquita Lagoon without replicates"
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = F
+    ) %>% 
+  scroll_box(
+    height = "300px", 
+    width = "900px"
+  )
+    
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
